@@ -1,13 +1,12 @@
 'use client'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
 
 export default function Home() {
   
   // allows these values to be used dynamically with components
   const [input, setInput] = useState('');
-  const [myArray, setMyArray] = useState<string[]>([]);
-
-  
+  const [myArray, setMyArray] = useState<string[]>([]);  
 
   function TextBoxChanged(event: React.ChangeEvent<HTMLInputElement>){
 
@@ -18,14 +17,59 @@ export default function Home() {
     //console.log("Textbox Changed To: " + input);
   }
 
-  
+  var didClick = false;
   function SubmitButton(){
-    setMyArray(prev => [...prev,input]); // update the state value
-    setInput(''); // clear the state varable which is synced to the compents value this also clearing the text-box
+    didClick = true;
     
     //console.log("Submit Clicked!");
-    //console.log(myArray);
   }
+
+  // fetch reqeust stuff
+  // https://dmitripavlutin.com/javascript-fetch-async-await/
+  const [shouldFetch, setShouldFetch] = useState(false); // State to trigger fetch
+  const [data, setData] = useState(null);
+  const [error, setError] = useState<string | null>(null); // Allow string or null
+  const [loading, setLoading] = useState(true); // Boolean for loading state
+  
+  function FetchRequest(){
+    
+    console.log("Request Clicked!");
+    setShouldFetch(true); // Trigger the fetch process
+   
+    if (loading) return <p>Loading...</p>;
+    if (error) return <p>Error: {error}</p>;
+
+    return (
+      <div>
+        <h1>Fetched Data:</h1>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
+      </div>
+    );
+    
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true); // Start loading
+        const response = await fetch('https://randomuser.me/api/'); // Replace with your API URL
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        setData(result); // Save fetched data to state
+      } catch (err) {
+        setError((err as Error).message || 'An unknown error occurred.'); // Force TypeScript to treat err as an Error
+      } finally {
+        setLoading(false); // End loading
+        setShouldFetch(false);
+      }
+    };
+    
+    fetchData(); // Call the function
+    
+  }, [shouldFetch]);
+  
   
   return (
     <h1>
@@ -41,13 +85,38 @@ export default function Home() {
          type="submit"
          onClick={SubmitButton}
          style={{ marginLeft: '5px', color: 'green' }} />
+         <div style={{marginLeft: '10px'}}>
+          <p>
+            Your inputs [{myArray.toString()}]
+          </p>
+        </div>
       </div>
-      <div style={{marginLeft: '10px'}}>
-        <p>
-          Your inputs [{myArray.toString()}]
+      
+      <div>
+        <p style={{marginTop: "20px", color: 'rebeccapurple'}}>
+          Endpoint Request
         </p>
+        
+        <button
+          onClick={FetchRequest} // Call FetchRequest when clicked
+          disabled={loading} // Disable the button while loading
+          style={{
+            color: 'green'
+          }}>{loading ? 'Loading...' : 'Fetch Data'}
+        </button>
+
+        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+        {data && (
+          <div>
+            <h2>Fetched Data:</h2>
+            <pre>{JSON.stringify(data, null, 2)}</pre>
+          </div>
+        )}
+
+
       </div>
     </h1>
+    
   );
 }
 // use useState tag https://react.dev/reference/react/useState
